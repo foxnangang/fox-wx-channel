@@ -1,0 +1,132 @@
+api:
+    hostname: 127.0.0.1
+    port: 2022
+    protocol: http
+bilibili:
+    cookie: ""
+bridge:
+    deploy:
+        admintoken: ""
+        pagesprojectname: ""
+        token: ""
+        workername: dm-bridge
+    deviceid: ""
+    devicename: ""
+    enabled: false
+    httptimeoutseconds: 30
+    methods: auto
+    token: ""
+    url: https://dm-bridge.example.workers.dev
+cert:
+    file: D:\Agent\WorkBuddy\软件开发\Fox-wx-channel\certs\fox_wx_channel.pem
+    key: D:\Agent\WorkBuddy\软件开发\Fox-wx-channel\certs\fox_wx_channel.key
+    name: Fox-wx-channel
+channels:
+    disablelocationtohome: false
+    download:
+        cover: false
+        defaulthighest: false
+        forcecheckallfeeds: false
+        frontend: false
+        pausewhendownload: false
+    refreshinterval: 0
+cloudflare:
+    accountid: ""
+    admintoken: ""
+    apitoken: ""
+    d1id: ""
+    d1name: mp-rss-db
+    refreshtoken: wx_channels_download
+    sphcookie: ""
+    sphcredential: ""
+    sphworkername: sph
+    workername: mp-rss-api
+cookie:
+    key: ""
+    password: ""
+    uuid: ""
+db:
+    filename: ""
+    filepath: '%CWD%/data.db'
+    host: ""
+    password: ""
+    port: ""
+    type: sqlite
+    username: ""
+debug:
+    echolog: false
+    error: false
+douyin:
+    cookie: ""
+download:
+    connectionconcurrency: 0
+    defaultactionwhenexisting: ""
+    dir: '%UserDownloads%'
+    filenametemplate: '{{filename}}_{{spec}}'
+    hooksscript: hooks.js
+    maxrunning: 3
+    playdoneaudio: true
+    remoteserver:
+        enabled: false
+        hostname: 192.168.1.2
+        port: 2022
+        protocol: http
+    resourceconcurrency: 100
+    segmentconcurrency: 10
+filehelper:
+    callbackurl: ""
+    enabled: true
+    syncinterval: 5
+inject:
+    contentscript: ""
+    globalscript: global.js
+kuaishou:
+    cookie: ""
+log:
+    enabled: false
+mcp:
+    enabled: false
+mp:
+    accountidsrefreshinterval: []
+    maxwebsocketclients: 5
+    refreshskipminutes: 20
+    refreshtoken: wx_channels_download
+    remoteserver:
+        hostname: ""
+        port: 80
+        protocol: http
+    tokenfilepath: ""
+proxy:
+    defaultinterface: ""
+    enabled: true
+    hostname: 127.0.0.1
+    networkservice: ""
+    port: 2023
+    skipinstallrootcert: false
+    system: true
+    tcprelay:
+        enabled: false
+        hostname: 127.0.0.1
+        port: 9900
+    tun: false
+    upstreamproxy: ""
+scraper:
+    retainedjobs: 20
+update:
+    mirror: ""
+    proxy: ""
+    sources:
+        - enabled: false
+          github_repo: ""
+          github_token: ""
+          manifest_url: ""
+          need_check_checksum: true
+          priority: 1
+          self_url: ""
+          type: github
+weibo:
+    cookie: ""
+workdir: ""
+youtube:
+    cookie: ""
+    potoken: ""
