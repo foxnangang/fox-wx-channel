@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -27,106 +26,82 @@ internal static class Program
 internal sealed class MainForm : Form
 {
     private const string ApiBase = "http://127.0.0.1:2022";
-    private static readonly Color SidebarColor = Color.FromArgb(23, 33, 54);
-    private static readonly Color SidebarMuted = Color.FromArgb(158, 171, 194);
-    private static readonly Color Accent = Color.FromArgb(57, 112, 235);
-    private static readonly Color PageColor = Color.FromArgb(244, 246, 251);
-    private static readonly Color CardColor = Color.White;
-    private static readonly Color TextColor = Color.FromArgb(32, 41, 58);
-    private static readonly Color MutedText = Color.FromArgb(112, 123, 144);
+    private static readonly Color Accent = Color.FromArgb(45, 108, 223);
+    private static readonly Color PageColor = Color.FromArgb(247, 249, 252);
+    private static readonly Color TextColor = Color.FromArgb(31, 41, 55);
+    private static readonly Color Muted = Color.FromArgb(122, 132, 148);
+    private static readonly Color BorderColor = Color.FromArgb(231, 235, 241);
 
     private readonly HttpClient _http = new() { BaseAddress = new Uri(ApiBase), Timeout = TimeSpan.FromSeconds(10) };
     private readonly string _appDir = AppContext.BaseDirectory;
     private Process? _core;
-    private readonly Panel _content = new() { Dock = DockStyle.Fill, BackColor = PageColor, Padding = new Padding(26, 20, 26, 22) };
-    private readonly Label _pageTitle = new() { AutoSize = true, Font = new Font("Microsoft YaHei UI", 17F, FontStyle.Bold), ForeColor = TextColor };
-    private readonly Label _pageSubtitle = new() { AutoSize = true, Font = new Font("Microsoft YaHei UI", 9F), ForeColor = MutedText };
+    private readonly Panel _content = new() { Dock = DockStyle.Fill, BackColor = PageColor, Padding = new Padding(20) };
+    private readonly Label _pageTitle = new() { AutoSize = true, Font = new Font("Microsoft YaHei UI", 15F, FontStyle.Bold), ForeColor = TextColor };
+    private readonly Label _pageSubtitle = new() { AutoSize = true, Font = new Font("Microsoft YaHei UI", 8.5F), ForeColor = Muted };
     private readonly DataGridView _grid = new();
-    private readonly Label _taskStatus = new() { Dock = DockStyle.Bottom, Height = 26, TextAlign = ContentAlignment.MiddleLeft, ForeColor = MutedText };
+    private readonly Label _empty = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Text = "还没有任务\r\n播放视频号视频后，点击页面上的下载按钮", ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 10F), Visible = false };
+    private readonly Label _count = new() { AutoSize = true, ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 9F) };
+    private readonly TextBox _search = new() { Width = 260, Font = new Font("Microsoft YaHei UI", 9.5F) };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 3000 };
     private readonly Panel _pageTasks = new() { Dock = DockStyle.Fill, Visible = false };
     private readonly Panel _pageSettings = new() { Dock = DockStyle.Fill, Visible = false };
     private readonly Panel _pageAbout = new() { Dock = DockStyle.Fill, Visible = false };
-    private readonly TextBox _dirBox = new() { Width = 520, Font = new Font("Microsoft YaHei UI", 10F), BorderStyle = BorderStyle.FixedSingle };
-    private readonly NumericUpDown _proxyPort = new() { Minimum = 1, Maximum = 65535, Width = 120, Font = new Font("Microsoft YaHei UI", 10F) };
-    private readonly Label _statTotal = new() { Text = "0", AutoSize = true, Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = TextColor };
-    private readonly Label _statDownloading = new() { Text = "0", AutoSize = true, Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = Accent };
-    private readonly Label _statFinished = new() { Text = "0", AutoSize = true, Font = new Font("Segoe UI", 24F, FontStyle.Bold), ForeColor = Color.FromArgb(34, 160, 110) };
+    private readonly TextBox _dirBox = new() { Width = 520, Font = new Font("Microsoft YaHei UI", 9.5F) };
+    private readonly NumericUpDown _proxyPort = new() { Minimum = 1, Maximum = 65535, Width = 120, Font = new Font("Microsoft YaHei UI", 9.5F) };
     private readonly List<(Button Button, string Key)> _navButtons = new();
     private readonly string _configPath;
+    private List<TaskRow> _rows = new();
 
     public MainForm()
     {
         _configPath = Path.Combine(_appDir, "config.yaml");
         Text = "Fox-wx-channel";
         Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
-        Size = new Size(1220, 800);
-        MinimumSize = new Size(1000, 660);
+        Size = new Size(1180, 760);
+        MinimumSize = new Size(960, 620);
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = PageColor;
         Font = new Font("Microsoft YaHei UI", 9F);
         DoubleBuffered = true;
 
         var main = new Panel { Dock = DockStyle.Fill, BackColor = PageColor };
-        var header = new Panel { Dock = DockStyle.Top, Height = 92, BackColor = CardColor, Padding = new Padding(30, 0, 30, 0) };
-        _pageTitle.Location = new Point(0, 22);
-        _pageSubtitle.Location = new Point(2, 56);
-        header.Controls.Add(_pageTitle);
-        header.Controls.Add(_pageSubtitle);
+        var top = new Panel { Dock = DockStyle.Top, Height = 62, BackColor = Color.White, Padding = new Padding(24, 0, 24, 0) };
+        _pageTitle.Location = new Point(0, 12);
+        _pageSubtitle.Location = new Point(1, 37);
+        top.Controls.Add(_pageTitle);
+        top.Controls.Add(_pageSubtitle);
+        top.Paint += (_, e) => e.Graphics.DrawLine(new Pen(BorderColor), 0, top.Height - 1, top.Width, top.Height - 1);
 
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Right, Width = 360, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(0, 28, 0, 0) };
-        var btnOpenDir = MakeButton("打开下载目录", 128, false);
-        var btnRefresh = MakeButton("刷新", 84, false);
-        btnRefresh.Click += async (_, _) => await LoadTasksAsync();
-        btnOpenDir.Click += (_, _) => OpenDownloadDir();
-        actions.Controls.Add(btnOpenDir);
-        actions.Controls.Add(btnRefresh);
-        header.Controls.Add(actions);
-
+        var actions = new FlowLayoutPanel { Dock = DockStyle.Right, Width = 300, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(0, 14, 0, 0) };
+        var openDir = MakeButton("打开下载目录", 116, false);
+        var refresh = MakeButton("刷新", 76, true);
+        refresh.Click += async (_, _) => await LoadTasksAsync();
+        openDir.Click += (_, _) => OpenDownloadDir();
+        actions.Controls.Add(openDir);
+        actions.Controls.Add(refresh);
+        top.Controls.Add(actions);
         main.Controls.Add(_content);
-        main.Controls.Add(header);
+        main.Controls.Add(top);
 
-        var sidebar = new Panel { Dock = DockStyle.Left, Width = 224, BackColor = SidebarColor };
-        var sidebarLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, BackColor = SidebarColor };
-        sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 118));
-        sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
+        var sidebar = new Panel { Dock = DockStyle.Left, Width = 92, BackColor = Color.White };
+        sidebar.Paint += (_, e) => e.Graphics.DrawLine(new Pen(BorderColor), sidebar.Width - 1, 0, sidebar.Width - 1, sidebar.Height);
+        var logo = new Panel { Location = new Point(26, 18), Size = new Size(40, 40), BackColor = Accent };
+        logo.Controls.Add(new Label { Text = "F", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 17F, FontStyle.Bold) });
+        sidebar.Controls.Add(logo);
 
-        var brandPanel = new Panel { Dock = DockStyle.Fill, BackColor = SidebarColor };
-        var logo = new Panel { Location = new Point(24, 28), Size = new Size(38, 38), BackColor = Accent };
-        var logoText = new Label { Text = "F", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI", 17F, FontStyle.Bold) };
-        logo.Controls.Add(logoText);
-        var brandName = new Label { Text = "Fox-wx-channel", Location = new Point(72, 28), AutoSize = true, ForeColor = Color.White, Font = new Font("Segoe UI", 10.5F, FontStyle.Bold) };
-        var brandSub = new Label { Text = "WX CHANNEL", Location = new Point(74, 52), AutoSize = true, ForeColor = SidebarMuted, Font = new Font("Segoe UI", 7.5F, FontStyle.Bold) };
-        brandPanel.Controls.AddRange(new Control[] { logo, brandName, brandSub });
-
-        var nav = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(14, 18, 14, 0), BackColor = SidebarColor };
-        var navTasks = MakeNavButton("↓  下载任务", "tasks");
-        var navSettings = MakeNavButton("⚙  设置", "settings");
-        var navAbout = MakeNavButton("ⓘ  关于", "about");
+        var nav = new FlowLayoutPanel { Location = new Point(8, 86), Size = new Size(76, 300), FlowDirection = FlowDirection.TopDown, WrapContents = false, BackColor = Color.White };
+        var navTasks = MakeNavButton("⬇", "下载", "tasks");
+        var navSettings = MakeNavButton("⚙", "设置", "settings");
+        var navAbout = MakeNavButton("ⓘ", "关于", "about");
         navTasks.Click += (_, _) => ShowPage("tasks");
         navSettings.Click += (_, _) => ShowPage("settings");
         navAbout.Click += (_, _) => ShowPage("about");
         nav.Controls.Add(navTasks);
         nav.Controls.Add(navSettings);
         nav.Controls.Add(navAbout);
-
-        var footer = new Label
-        {
-            Text = "v0.1.0-fox",
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(28, 0, 0, 0),
-            ForeColor = SidebarMuted,
-            Font = new Font("Segoe UI", 8.5F)
-        };
-
-        sidebarLayout.Controls.Add(brandPanel, 0, 0);
-        sidebarLayout.Controls.Add(nav, 0, 1);
-        sidebarLayout.Controls.Add(footer, 0, 2);
-        sidebar.Controls.Add(sidebarLayout);
-
-        header.Paint += (_, e) => e.Graphics.DrawLine(new Pen(Color.FromArgb(232, 236, 242)), 0, header.Height - 1, header.Width, header.Height - 1);
+        sidebar.Controls.Add(nav);
+        var version = new Label { Text = "v0.1.0", Dock = DockStyle.Bottom, Height = 34, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Muted, Font = new Font("Segoe UI", 7.5F) };
+        sidebar.Controls.Add(version);
 
         Controls.Add(main);
         Controls.Add(sidebar);
@@ -138,10 +113,8 @@ internal sealed class MainForm : Form
         _content.Controls.Add(_pageSettings);
         _content.Controls.Add(_pageAbout);
 
-        _timer.Tick += async (_, _) =>
-        {
-            if (_pageTasks.Visible) await LoadTasksAsync();
-        };
+        _search.TextChanged += (_, _) => RenderRows();
+        _timer.Tick += async (_, _) => { if (_pageTasks.Visible) await LoadTasksAsync(); };
         Load += async (_, _) =>
         {
             LoadSettings();
@@ -149,10 +122,7 @@ internal sealed class MainForm : Form
             ShowPage("tasks");
             _timer.Start();
         };
-        FormClosing += (_, _) =>
-        {
-            if (_core is { HasExited: false }) _core.Kill();
-        };
+        FormClosing += (_, _) => { if (_core is { HasExited: false }) _core.Kill(); };
     }
 
     private static Button MakeButton(string text, int width, bool primary)
@@ -161,36 +131,36 @@ internal sealed class MainForm : Form
         {
             Text = text,
             Width = width,
-            Height = 36,
+            Height = 32,
             FlatStyle = FlatStyle.Flat,
             BackColor = primary ? Accent : Color.White,
             ForeColor = primary ? Color.White : TextColor,
             Font = new Font("Microsoft YaHei UI", 9F),
-            Margin = new Padding(10, 0, 0, 0),
+            Margin = new Padding(8, 0, 0, 0),
             Cursor = Cursors.Hand
         };
-        button.FlatAppearance.BorderColor = primary ? Accent : Color.FromArgb(216, 222, 233);
+        button.FlatAppearance.BorderColor = primary ? Accent : BorderColor;
         button.FlatAppearance.BorderSize = 1;
         return button;
     }
 
-    private Button MakeNavButton(string text, string key)
+    private Button MakeNavButton(string glyph, string label, string key)
     {
         var button = new Button
         {
-            Text = "   " + text,
-            Width = 196,
-            Height = 44,
+            Text = glyph + "\n" + label,
+            Width = 76,
+            Height = 62,
             FlatStyle = FlatStyle.Flat,
-            TextAlign = ContentAlignment.MiddleLeft,
-            BackColor = SidebarColor,
-            ForeColor = SidebarMuted,
-            Font = new Font("Microsoft YaHei UI", 10F),
-            Margin = new Padding(0, 3, 0, 3),
+            TextAlign = ContentAlignment.MiddleCenter,
+            BackColor = Color.White,
+            ForeColor = Muted,
+            Font = new Font("Microsoft YaHei UI", 8.5F),
+            Margin = new Padding(0, 0, 0, 6),
             Cursor = Cursors.Hand
         };
         button.FlatAppearance.BorderSize = 0;
-        button.FlatAppearance.MouseOverBackColor = Color.FromArgb(34, 48, 76);
+        button.FlatAppearance.MouseOverBackColor = Color.FromArgb(244, 247, 252);
         _navButtons.Add((button, key));
         return button;
     }
@@ -200,51 +170,43 @@ internal sealed class MainForm : Form
         _pageTasks.Visible = page == "tasks";
         _pageSettings.Visible = page == "settings";
         _pageAbout.Visible = page == "about";
-        _pageTitle.Text = page switch
-        {
-            "settings" => "设置",
-            "about" => "关于",
-            _ => "下载任务"
-        };
+        _pageTitle.Text = page switch { "settings" => "设置", "about" => "关于", _ => "下载任务" };
         _pageSubtitle.Text = page switch
         {
-            "settings" => "修改保存位置与网络端口，保存后重启程序生效",
-            "about" => "版本信息与安装位置",
-            _ => "查看、开始、暂停和清理视频号下载任务"
+            "settings" => "保存位置与网络端口",
+            "about" => "版本与安装信息",
+            _ => "查看和管理视频号下载任务"
         };
         foreach (var (button, key) in _navButtons)
         {
             var active = key == page;
-            button.BackColor = active ? Accent : SidebarColor;
-            button.ForeColor = active ? Color.White : SidebarMuted;
+            button.BackColor = active ? Color.FromArgb(236, 242, 254) : Color.White;
+            button.ForeColor = active ? Accent : Muted;
         }
         if (page == "tasks") _ = LoadTasksAsync();
     }
 
     private void BuildTasksPage()
     {
-        var stats = new TableLayoutPanel { Dock = DockStyle.Top, Height = 116, ColumnCount = 3, RowCount = 1, BackColor = PageColor };
-        stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-        stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-        stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-        stats.Controls.Add(MakeStatCard("全部任务", _statTotal, "当前保留的下载记录", Color.FromArgb(120, 134, 160)), 0, 0);
-        stats.Controls.Add(MakeStatCard("正在下载", _statDownloading, "等待中与下载中的任务", Accent), 1, 0);
-        stats.Controls.Add(MakeStatCard("已完成", _statFinished, "已成功保存到本地", Color.FromArgb(34, 160, 110)), 2, 0);
-
-        var toolbar = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = PageColor };
-        var startAll = MakeButton("全部开始", 96, true);
-        var pauseAll = MakeButton("全部暂停", 96, false);
-        var delete = MakeButton("删除选中", 96, false);
-        startAll.Location = new Point(0, 10);
-        pauseAll.Location = new Point(106, 10);
-        delete.Location = new Point(212, 10);
+        var searchBar = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = PageColor };
+        _search.Location = new Point(0, 9);
+        _search.PlaceholderText = "搜索任务名称";
+        _search.BorderStyle = BorderStyle.FixedSingle;
+        var startAll = MakeButton("全部开始", 90, true);
+        startAll.Location = new Point(276, 9);
+        var pauseAll = MakeButton("全部暂停", 90, false);
+        pauseAll.Location = new Point(374, 9);
+        var delete = MakeButton("删除选中", 90, false);
+        delete.Location = new Point(472, 9);
         startAll.Click += async (_, _) => await PostAsync("/api/v1/download_task/start_all", "{}");
         pauseAll.Click += async (_, _) => await PostAsync("/api/v1/download_task/pause_all", "{}");
         delete.Click += async (_, _) => await DeleteSelectedAsync();
-        toolbar.Controls.AddRange(new Control[] { startAll, pauseAll, delete });
+        _count.Location = new Point(700, 17);
+        searchBar.Controls.AddRange(new Control[] { _search, startAll, pauseAll, delete, _count });
+        searchBar.Resize += (_, _) => _count.Left = searchBar.Width - _count.Width;
 
         _grid.Dock = DockStyle.Fill;
-        _grid.BackgroundColor = CardColor;
+        _grid.BackgroundColor = Color.White;
         _grid.BorderStyle = BorderStyle.None;
         _grid.ReadOnly = true;
         _grid.AllowUserToAddRows = false;
@@ -254,19 +216,19 @@ internal sealed class MainForm : Form
         _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _grid.MultiSelect = false;
         _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        _grid.ColumnHeadersHeight = 42;
-        _grid.RowTemplate.Height = 38;
-        _grid.GridColor = Color.FromArgb(239, 242, 247);
+        _grid.ColumnHeadersHeight = 40;
+        _grid.RowTemplate.Height = 40;
+        _grid.GridColor = Color.FromArgb(240, 242, 246);
         _grid.EnableHeadersVisualStyles = false;
-        _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
-        _grid.ColumnHeadersDefaultCellStyle.ForeColor = MutedText;
+        _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(249, 250, 252);
+        _grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(95, 105, 120);
         _grid.ColumnHeadersDefaultCellStyle.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold);
-        _grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(248, 250, 253);
-        _grid.DefaultCellStyle.BackColor = CardColor;
+        _grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(249, 250, 252);
+        _grid.DefaultCellStyle.BackColor = Color.White;
         _grid.DefaultCellStyle.ForeColor = TextColor;
-        _grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(232, 240, 255);
+        _grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(234, 242, 255);
         _grid.DefaultCellStyle.SelectionForeColor = TextColor;
-        _grid.DefaultCellStyle.Padding = new Padding(6, 0, 6, 0);
+        _grid.DefaultCellStyle.Padding = new Padding(8, 0, 8, 0);
         _grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(252, 253, 255);
         _grid.Columns.Add("id", "ID");
         _grid.Columns.Add("name", "名称");
@@ -274,111 +236,92 @@ internal sealed class MainForm : Form
         _grid.Columns.Add("progress", "进度");
         _grid.Columns.Add("size", "大小");
         _grid.Columns.Add("updated", "更新时间");
-        _grid.Columns["id"]!.FillWeight = 7;
-        _grid.Columns["name"]!.FillWeight = 48;
-        _grid.Columns["status"]!.FillWeight = 13;
-        _grid.Columns["progress"]!.FillWeight = 11;
-        _grid.Columns["size"]!.FillWeight = 11;
-        _grid.Columns["updated"]!.FillWeight = 20;
+        _grid.Columns["id"]!.FillWeight = 6;
+        _grid.Columns["name"]!.FillWeight = 50;
+        _grid.Columns["status"]!.FillWeight = 12;
+        _grid.Columns["progress"]!.FillWeight = 10;
+        _grid.Columns["size"]!.FillWeight = 10;
+        _grid.Columns["updated"]!.FillWeight = 18;
         _grid.CellDoubleClick += (_, _) => OpenSelectedTaskDir();
+        _grid.CellFormatting += (_, e) =>
+        {
+            if (e.ColumnIndex != _grid.Columns["status"]!.Index || e.Value is not string status) return;
+            e.CellStyle.ForeColor = status switch
+            {
+                "已完成" => Color.FromArgb(22, 150, 100),
+                "下载中" => Accent,
+                "失败" => Color.FromArgb(210, 70, 70),
+                "已暂停" => Color.FromArgb(180, 130, 20),
+                _ => TextColor
+            };
+        };
 
-        var gridCard = new CardPanel { Dock = DockStyle.Fill, BackColor = CardColor, Padding = new Padding(1) };
+        var gridCard = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(1) };
+        gridCard.Paint += (_, e) => e.Graphics.DrawRectangle(new Pen(BorderColor), 0, 0, gridCard.Width - 1, gridCard.Height - 1);
         gridCard.Controls.Add(_grid);
-        _pageTasks.Controls.Add(gridCard);
-        _pageTasks.Controls.Add(_taskStatus);
-        _pageTasks.Controls.Add(toolbar);
-        _pageTasks.Controls.Add(stats);
-    }
+        gridCard.Controls.Add(_empty);
+        _empty.BringToFront();
 
-    private Control MakeStatCard(string title, Label value, string subtitle, Color accent)
-    {
-        var card = new CardPanel { Dock = DockStyle.Fill, BackColor = CardColor, Margin = new Padding(0, 0, 14, 0), Padding = new Padding(24, 14, 22, 12), AccentBar = accent };
-        var titleLabel = new Label { Text = title, Dock = DockStyle.Top, Height = 24, ForeColor = MutedText, Font = new Font("Microsoft YaHei UI", 9F), BackColor = CardColor };
-        value.Dock = DockStyle.Top;
-        value.Height = 46;
-        value.BackColor = CardColor;
-        var subLabel = new Label { Text = subtitle, Dock = DockStyle.Top, Height = 20, ForeColor = Color.FromArgb(150, 158, 175), Font = new Font("Microsoft YaHei UI", 8F), BackColor = CardColor };
-        card.Controls.Add(subLabel);
-        card.Controls.Add(value);
-        card.Controls.Add(titleLabel);
-        return card;
+        _pageTasks.Controls.Add(gridCard);
+        _pageTasks.Controls.Add(searchBar);
     }
 
     private void BuildSettingsPage()
     {
-        var layout = new TableLayoutPanel { Dock = DockStyle.Top, Height = 430, ColumnCount = 2, RowCount = 1, BackColor = PageColor };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42F));
+        var panel = new Panel { Dock = DockStyle.Top, Height = 420, BackColor = Color.White, Padding = new Padding(28) };
+        panel.Paint += (_, e) => e.Graphics.DrawRectangle(new Pen(BorderColor), 0, 0, panel.Width - 1, panel.Height - 1);
 
-        var left = new CardPanel { Dock = DockStyle.Fill, BackColor = CardColor, Margin = new Padding(0, 0, 14, 0), Padding = new Padding(26, 22, 26, 22) };
-        var downloadTitle = new Label { Text = "下载位置", Location = new Point(26, 22), AutoSize = true, Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Bold), ForeColor = TextColor };
-        var dirLabel = new Label { Text = "视频保存目录", Location = new Point(26, 68), AutoSize = true, ForeColor = TextColor };
-        _dirBox.Location = new Point(26, 94);
-        _dirBox.Width = 430;
+        var title = new Label { Text = "下载设置", Location = new Point(28, 24), AutoSize = true, Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Bold), ForeColor = TextColor };
+        var dirLabel = new Label { Text = "视频保存目录", Location = new Point(28, 70), AutoSize = true, ForeColor = TextColor };
+        _dirBox.Location = new Point(28, 96);
         var browse = MakeButton("浏览...", 84, false);
-        browse.Location = new Point(466, 92);
+        browse.Location = new Point(556, 94);
         browse.Click += BrowseDir;
-        var dirHint = new Label { Text = "可填写绝对路径，或使用 %UserDownloads% 表示系统下载文件夹。", Location = new Point(26, 134), AutoSize = true, ForeColor = MutedText };
+        var hint = new Label { Text = "可填写绝对路径，或使用 %UserDownloads% 表示系统下载文件夹。", Location = new Point(28, 136), AutoSize = true, ForeColor = Muted };
 
-        var netTitle = new Label { Text = "网络设置", Location = new Point(26, 188), AutoSize = true, Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Bold), ForeColor = TextColor };
-        var portLabel = new Label { Text = "代理端口", Location = new Point(26, 232), AutoSize = true, ForeColor = TextColor };
-        _proxyPort.Location = new Point(26, 258);
-        var apiLabel = new Label { Text = "管理端口固定为 2022", Location = new Point(166, 263), AutoSize = true, ForeColor = MutedText };
-        var hint = new Label { Text = "保存后重启程序生效。", Location = new Point(26, 306), AutoSize = true, ForeColor = MutedText };
-        var save = MakeButton("保存设置", 110, true);
-        save.Location = new Point(26, 344);
+        var portLabel = new Label { Text = "代理端口", Location = new Point(28, 182), AutoSize = true, ForeColor = TextColor };
+        _proxyPort.Location = new Point(28, 208);
+        var portHint = new Label { Text = "管理端口固定为 2022，修改后重启程序生效。", Location = new Point(168, 213), AutoSize = true, ForeColor = Muted };
+
+        var save = MakeButton("保存设置", 104, true);
+        save.Location = new Point(28, 258);
         save.Click += SaveSettings;
-        left.Controls.AddRange(new Control[] { downloadTitle, dirLabel, _dirBox, browse, dirHint, netTitle, portLabel, _proxyPort, apiLabel, hint, save });
-
-        var right = new CardPanel { Dock = DockStyle.Fill, BackColor = CardColor, Margin = new Padding(0), Padding = new Padding(26, 22, 26, 22) };
-        var infoTitle = new Label { Text = "安装信息", Location = new Point(26, 22), AutoSize = true, Font = new Font("Microsoft YaHei UI", 12F, FontStyle.Bold), ForeColor = TextColor };
-        var installLabel = new Label { Text = "安装目录", Location = new Point(26, 68), AutoSize = true, ForeColor = MutedText };
-        var installPath = new Label { Text = _appDir, Location = new Point(26, 92), AutoSize = true, ForeColor = TextColor };
-        var configLabel = new Label { Text = "配置文件", Location = new Point(26, 132), AutoSize = true, ForeColor = MutedText };
-        var configPath = new Label { Text = _configPath, Location = new Point(26, 156), AutoSize = true, ForeColor = TextColor };
-        var openConfig = MakeButton("打开配置文件", 126, false);
-        openConfig.Location = new Point(26, 208);
+        var openConfig = MakeButton("打开配置文件", 118, false);
+        openConfig.Location = new Point(142, 258);
         openConfig.Click += (_, _) => OpenPath(_configPath);
-        var openInstall = MakeButton("打开安装目录", 126, false);
-        openInstall.Location = new Point(162, 208);
+        var openInstall = MakeButton("打开安装目录", 118, false);
+        openInstall.Location = new Point(270, 258);
         openInstall.Click += (_, _) => OpenPath(_appDir);
-        var note = new Label
-        {
-            Text = "提示：\r\n修改保存目录后，新任务会写入新位置；\r\n已下载文件不会自动移动。",
-            Location = new Point(26, 266),
-            AutoSize = true,
-            ForeColor = MutedText
-        };
-        right.Controls.AddRange(new Control[] { infoTitle, installLabel, installPath, configLabel, configPath, openConfig, openInstall, note });
 
-        layout.Controls.Add(left, 0, 0);
-        layout.Controls.Add(right, 1, 0);
-        _pageSettings.Controls.Add(layout);
+        var info = new Label
+        {
+            Text = "安装信息\r\n安装目录：" + _appDir + "\r\n配置文件：" + _configPath,
+            Location = new Point(28, 318),
+            AutoSize = true,
+            ForeColor = Muted
+        };
+        panel.Controls.AddRange(new Control[] { title, dirLabel, _dirBox, browse, hint, portLabel, _proxyPort, portHint, save, openConfig, openInstall, info });
+        _pageSettings.Controls.Add(panel);
     }
 
     private void BuildAboutPage()
     {
-        var card = new Panel { Dock = DockStyle.Top, Height = 330, BackColor = CardColor, Padding = new Padding(30, 24, 30, 24) };
-        var title = new Label { Text = "Fox-wx-channel", Location = new Point(30, 24), AutoSize = true, Font = new Font("Segoe UI", 18F, FontStyle.Bold), ForeColor = TextColor };
-        var version = new Label { Text = "v0.1.0-fox", Location = new Point(30, 70), AutoSize = true, ForeColor = MutedText };
+        var panel = new Panel { Dock = DockStyle.Top, Height = 320, BackColor = Color.White, Padding = new Padding(28) };
+        panel.Paint += (_, e) => e.Graphics.DrawRectangle(new Pen(BorderColor), 0, 0, panel.Width - 1, panel.Height - 1);
+        var title = new Label { Text = "Fox-wx-channel", Location = new Point(28, 24), AutoSize = true, Font = new Font("Segoe UI", 18F, FontStyle.Bold), ForeColor = TextColor };
+        var version = new Label { Text = "v0.1.0-fox", Location = new Point(28, 68), AutoSize = true, ForeColor = Muted };
         var desc = new Label
         {
             Text = "微信视频号下载工具，本机自用、非商业版本。\r\n基于 ltaoo/wx_channels_download v261123 改造。",
-            Location = new Point(30, 112),
+            Location = new Point(28, 108),
             AutoSize = true,
             ForeColor = TextColor
         };
-        var github = new LinkLabel { Text = "https://github.com/foxnangang/fox-wx-channel", Location = new Point(30, 168), AutoSize = true, LinkColor = Accent };
+        var github = new LinkLabel { Text = "https://github.com/foxnangang/fox-wx-channel", Location = new Point(28, 160), AutoSize = true, LinkColor = Accent };
         github.Click += (_, _) => OpenPath("https://github.com/foxnangang/fox-wx-channel");
-        var path = new Label
-        {
-            Text = $"安装目录：{_appDir}\r\n配置文件：{_configPath}",
-            Location = new Point(30, 212),
-            AutoSize = true,
-            ForeColor = MutedText
-        };
-        card.Controls.AddRange(new Control[] { title, version, desc, github, path });
-        _pageAbout.Controls.Add(card);
+        var path = new Label { Text = "安装目录：" + _appDir + "\r\n配置文件：" + _configPath, Location = new Point(28, 200), AutoSize = true, ForeColor = Muted };
+        panel.Controls.AddRange(new Control[] { title, version, desc, github, path });
+        _pageAbout.Controls.Add(panel);
     }
 
     private async Task EnsureCoreAsync()
@@ -392,12 +335,7 @@ internal sealed class MainForm : Form
         }
         try
         {
-            _core = Process.Start(new ProcessStartInfo(corePath)
-            {
-                WorkingDirectory = _appDir,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            });
+            _core = Process.Start(new ProcessStartInfo(corePath) { WorkingDirectory = _appDir, UseShellExecute = false, CreateNoWindow = true });
             for (var i = 0; i < 60 && !IsPortOpen(2022); i++) await Task.Delay(500);
         }
         catch (Exception ex)
@@ -408,11 +346,7 @@ internal sealed class MainForm : Form
 
     private async Task LoadTasksAsync()
     {
-        if (!IsPortOpen(2022))
-        {
-            _taskStatus.Text = "后台服务未启动";
-            return;
-        }
+        if (!IsPortOpen(2022)) { _count.Text = "后台服务未启动"; return; }
         try
         {
             using var response = await _http.GetAsync("/api/v1/download_task/list?page=1&page_size=100");
@@ -421,15 +355,12 @@ internal sealed class MainForm : Form
             var root = doc.RootElement;
             if (root.TryGetProperty("code", out var code) && code.GetInt32() != 0)
             {
-                _taskStatus.Text = root.TryGetProperty("msg", out var msg) ? msg.GetString() : "加载失败";
+                _count.Text = root.TryGetProperty("msg", out var msg) ? msg.GetString() : "加载失败";
                 return;
             }
             var data = root.GetProperty("data");
             var list = data.GetProperty("list");
-            var total = data.TryGetProperty("total", out var totalValue) ? totalValue.GetInt64() : list.GetArrayLength();
-            _grid.Rows.Clear();
-            var downloading = 0;
-            var finished = 0;
+            _rows.Clear();
             foreach (var item in list.EnumerateArray())
             {
                 var id = item.GetProperty("id").GetInt32();
@@ -438,33 +369,36 @@ internal sealed class MainForm : Form
                 var progress = item.TryGetProperty("progress", out var progressValue) ? progressValue.GetDouble() : 0;
                 var size = item.TryGetProperty("size", out var sizeValue) ? sizeValue.GetInt64() : 0;
                 var updated = item.TryGetProperty("updated_at", out var updatedValue) ? updatedValue.GetInt64() : 0;
-                if (status is 0 or 1 or 2 or 4) downloading++;
-                if (status == 5) finished++;
-                var rowIndex = _grid.Rows.Add(id, name, StatusText(status), $"{progress:0.#}%", FormatSize(size), FormatTime(updated));
-                _grid.Rows[rowIndex].Tag = TaskDir(item);
+                _rows.Add(new TaskRow(id, name, status, progress, size, updated, TaskDir(item)));
             }
-            _statTotal.Text = total.ToString();
-            _statDownloading.Text = downloading.ToString();
-            _statFinished.Text = finished.ToString();
-            _taskStatus.Text = $"共 {total} 个任务";
+            RenderRows();
         }
         catch (Exception ex)
         {
-            _taskStatus.Text = "加载失败：" + ex.Message;
+            _count.Text = "加载失败：" + ex.Message;
         }
+    }
+
+    private void RenderRows()
+    {
+        var keyword = _search.Text.Trim();
+        var filtered = string.IsNullOrEmpty(keyword)
+            ? _rows
+            : _rows.Where(row => row.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
+        _grid.Rows.Clear();
+        foreach (var row in filtered)
+        {
+            var index = _grid.Rows.Add(row.Id, row.Name, StatusText(row.Status), $"{row.Progress:0.#}%", FormatSize(row.Size), FormatTime(row.UpdatedAt));
+            _grid.Rows[index].Tag = row.Dir;
+        }
+        _count.Text = $"共 {filtered.Count} 个任务";
+        _empty.Visible = filtered.Count == 0;
+        if (_empty.Visible) _empty.BringToFront();
     }
 
     private static string StatusText(int status) => status switch
     {
-        0 => "等待中",
-        1 => "准备中",
-        2 => "下载中",
-        3 => "已暂停",
-        4 => "合并中",
-        5 => "已完成",
-        6 => "失败",
-        7 => "已取消",
-        _ => "未知"
+        0 => "等待中", 1 => "准备中", 2 => "下载中", 3 => "已暂停", 4 => "合并中", 5 => "已完成", 6 => "失败", 7 => "已取消", _ => "未知"
     };
 
     private static string FormatSize(long bytes)
@@ -477,10 +411,11 @@ internal sealed class MainForm : Form
         return $"{value:0.#} {units[unit]}";
     }
 
-    private static string FormatTime(long seconds)
+    private static string FormatTime(long timestamp)
     {
-        if (seconds <= 0) return "";
-        return DateTimeOffset.FromUnixTimeSeconds(seconds).ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+        if (timestamp <= 0) return "";
+        if (timestamp > 9_999_999_999) timestamp /= 1000;
+        return DateTimeOffset.FromUnixTimeSeconds(timestamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm");
     }
 
     private static string TaskDir(JsonElement item)
@@ -488,20 +423,16 @@ internal sealed class MainForm : Form
         if (!item.TryGetProperty("files", out var files) || files.ValueKind != JsonValueKind.Array) return "";
         foreach (var file in files.EnumerateArray())
         {
-            if (file.TryGetProperty("download_dir", out var dir) && !string.IsNullOrWhiteSpace(dir.GetString()))
-                return dir.GetString()!;
-            if (file.TryGetProperty("file_path", out var path) && !string.IsNullOrWhiteSpace(path.GetString()))
-                return Path.GetDirectoryName(path.GetString()!) ?? "";
+            if (file.TryGetProperty("download_dir", out var dir) && !string.IsNullOrWhiteSpace(dir.GetString())) return dir.GetString()!;
+            if (file.TryGetProperty("file_path", out var path) && !string.IsNullOrWhiteSpace(path.GetString())) return Path.GetDirectoryName(path.GetString()!) ?? "";
         }
         return "";
     }
 
     private void OpenSelectedTaskDir()
     {
-        if (_grid.CurrentRow?.Tag is string dir && !string.IsNullOrWhiteSpace(dir))
-            OpenPath(dir);
-        else
-            OpenDownloadDir();
+        if (_grid.CurrentRow?.Tag is string dir && !string.IsNullOrWhiteSpace(dir)) OpenPath(dir);
+        else OpenDownloadDir();
     }
 
     private void OpenDownloadDir()
@@ -553,8 +484,7 @@ internal sealed class MainForm : Form
             MessageBox.Show("请先选择任务", "Fox-wx-channel", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
-        if (MessageBox.Show("确定删除选中任务？不会删除已下载文件。", "Fox-wx-channel", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-            return;
+        if (MessageBox.Show("确定删除选中任务？不会删除已下载文件。", "Fox-wx-channel", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
         var id = Convert.ToInt32(_grid.CurrentRow.Cells["id"].Value);
         await PostAsync("/api/v1/download_task/delete", $"{{\"task_ids\":[{id}],\"delete_files\":false}}");
     }
@@ -576,8 +506,7 @@ internal sealed class MainForm : Form
     private void LoadSettings()
     {
         _dirBox.Text = ConfigHelper.GetValue(_configPath, "download", "dir", "%UserDownloads%");
-        if (int.TryParse(ConfigHelper.GetValue(_configPath, "proxy", "port", "2023"), out var port))
-            _proxyPort.Value = Math.Clamp(port, 1, 65535);
+        if (int.TryParse(ConfigHelper.GetValue(_configPath, "proxy", "port", "2023"), out var port)) _proxyPort.Value = Math.Clamp(port, 1, 65535);
     }
 
     private static bool IsPortOpen(int port)
@@ -586,57 +515,8 @@ internal sealed class MainForm : Form
         try { client.Connect("127.0.0.1", port); return true; }
         catch { return false; }
     }
-}
 
-internal sealed class CardPanel : Panel
-{
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public int Radius { get; set; } = 14;
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public Color BorderColor { get; set; } = Color.FromArgb(232, 236, 242);
-    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public Color AccentBar { get; set; } = Color.Transparent;
-
-    public CardPanel()
-    {
-        DoubleBuffered = true;
-        ResizeRedraw = true;
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
-    }
-
-    protected override void OnResize(EventArgs eventargs)
-    {
-        base.OnResize(eventargs);
-        using var path = RoundedRect(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
-        Region = new Region(path);
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        using var path = RoundedRect(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
-        using var brush = new SolidBrush(BackColor);
-        e.Graphics.FillPath(brush, path);
-        if (AccentBar != Color.Transparent)
-        {
-            using var accent = new SolidBrush(AccentBar);
-            e.Graphics.FillRectangle(accent, new Rectangle(0, 16, 4, Height - 32));
-        }
-        using var pen = new Pen(BorderColor);
-        e.Graphics.DrawPath(pen, path);
-    }
-
-    private static System.Drawing.Drawing2D.GraphicsPath RoundedRect(Rectangle bounds, int radius)
-    {
-        var path = new System.Drawing.Drawing2D.GraphicsPath();
-        var d = radius * 2;
-        path.AddArc(bounds.Left, bounds.Top, d, d, 180, 90);
-        path.AddArc(bounds.Right - d, bounds.Top, d, d, 270, 90);
-        path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
-        path.AddArc(bounds.Left, bounds.Bottom - d, d, d, 90, 90);
-        path.CloseFigure();
-        return path;
-    }
+    private sealed record TaskRow(int Id, string Name, int Status, double Progress, long Size, long UpdatedAt, string Dir);
 }
 
 internal static class ConfigHelper
@@ -654,8 +534,7 @@ internal static class ConfigHelper
                 current = line.TrimEnd(':').Trim();
                 continue;
             }
-            if (current == section && line.StartsWith(key + ":"))
-                return line.Substring(key.Length + 1).Trim().Trim('"');
+            if (current == section && line.StartsWith(key + ":")) return line.Substring(key.Length + 1).Trim().Trim('"');
         }
         return fallback;
     }
