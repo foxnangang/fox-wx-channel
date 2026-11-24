@@ -1,73 +1,96 @@
-# Fox-wx-channel
+# 微信视频号下载工具
 
-本机自用的微信视频号下载工具，基于 `ltaoo/wx_channels_download` v261123 改造。**仅限非商业、个人自用**。
+一款 Windows 桌面工具，用于保存微信视频号中的视频到本地。原生窗口界面，操作简单，支持任务列表、进度查看、批量开始/暂停和保存目录设置。
 
-- GitHub：<https://github.com/foxnangang/fox-wx-channel>
-- 发行版下载：<https://github.com/foxnangang/fox-wx-channel/releases/tag/v0.1.0-fox>
-- 安装包：`Fox-wx-channel-Setup.exe` 标准安装向导，单文件，管理员运行，默认装到 `%LOCALAPPDATA%\Fox-wx-channel`
-- 原生界面：`Fox-wx-channel.exe` 是 WinForms 桌面程序，左侧导航（下载任务 / 设置 / 关于），顶部刷新与打开目录，任务表格显示状态、进度、大小；设置页可直接修改保存目录与代理端口
-- 反馈：<https://github.com/foxnangang/fox-wx-channel/issues>
+## 功能
 
-## 工作原理
+- 保存微信视频号视频到本地
+- 原生 Windows 程序，无浏览器套壳、无控制台窗口
+- 任务列表显示名称、状态、进度、大小和更新时间
+- 支持全部开始、全部暂停、删除任务
+- 支持搜索任务、打开下载目录
+- 设置页可直接修改视频保存目录和代理端口
+- 标准安装向导，自动创建桌面和开始菜单快捷方式
+- 提供卸载程序，可从 Windows“应用”中卸载
 
-程序在本机启动 HTTP/HTTPS 中间人代理（默认 `127.0.0.1:2023`），首次运行生成**本机专属**根 CA 并安装到 Windows 信任根证书库；微信 PC 端访问视频号页面时，代理向页面注入下载按钮并捕获视频元数据与解密密钥，随后分片下载并还原文件头（前 128 KB）。管理 API 默认只监听 `127.0.0.1:2022`。
+## 系统要求
 
-## 环境
+- Windows 10 / Windows 11，x86_64
+- 微信 PC 4.x
+- Microsoft .NET 9 桌面运行时
 
-- Windows 10/11 x86_64
-- 微信 PC 客户端最新版（4.x）
-- 源码构建需要 Go 1.20+（本机使用便携版 Go 1.20.14）
+## 下载与安装
 
-## 构建
+1. 打开 [Releases](https://github.com/foxnangang/fox-wx-channel/releases)。
+2. 下载 `Fox-wx-channel-Setup.exe`。
+3. 以管理员身份运行安装包。
+4. 选择安装目录。默认安装到 `%LOCALAPPDATA%\微信视频号下载工具`。
+5. 如果选择 `Program Files` 或盘符根目录，安装程序会自动创建 `微信视频号下载工具` 子文件夹。
+6. 点击“安装”，完成后可直接运行程序或打开安装目录。
 
-```bash
-# Go 已加入 PATH 时
-bash build-fox.sh
+升级安装不会覆盖已有的 `config.yaml`。
 
-# 使用便携版 Go 时
-FOX_GO="/d/Agent/WorkBuddy/Fox/2026-11-24/toolchain/go/bin/go" bash build-fox.sh
+## 使用
+
+1. 打开程序，后台服务会自动启动。
+2. 首次运行可能弹出管理员授权，用于安装本机根证书和设置系统代理。
+3. 打开微信 PC 端视频号。
+4. 播放视频后暂停，点击页面上的下载按钮；无按钮时查看页面侧边或底部悬浮按钮。
+5. 回到程序，在“下载任务”中查看进度和保存位置。
+
+双击任务行可以打开该任务所在的保存目录。
+
+## 设置
+
+- **视频保存目录**：支持绝对路径，也支持 `%UserDownloads%` 表示系统下载文件夹。
+- **代理端口**：默认 `2023`，管理端口固定为 `2022`。
+- 修改设置后需要重启程序生效。
+- 设置页可以直接打开配置文件和安装目录。
+
+## 常见问题
+
+### 视频号页面没有下载按钮
+
+微信 4.2.x 需要将视频号配置中的 `featureSwitch.handleFinder` 改为 `false`。操作前请完全退出微信并备份文件：
+
+```text
+%APPDATA%\Tencent\xwechat\radium\users\<账号ID>\xworker\liteapp\local\packages\ilinkres_uzhblidb\engineConfig\<版本>\dist\engineConfig.json
 ```
 
-## 运行
+保存后重新打开微信。
 
-1. **以管理员身份**运行 `fox-wx-channel.exe`（UAC 提权用于安装根证书与设置系统代理）。
-2. 首次启动会在工作目录生成 `certs/Fox-wx-channel.pem`、`.key`，并安装根证书；私钥权限为 0600。
-3. 终端提示代理启动成功后，打开微信 PC 端视频号。
-4. 播放视频后暂停，点击页面下方下载按钮；无按钮时查看页面侧边/底部悬浮按钮。
-5. 默认下载当前清晰度，可下拉选择其他规格；文件默认保存到“下载”目录，命名格式 `标题_清晰度.mp4`。
+### 任务列表为空
 
-停止代理：`fox-wx-channel.exe server stop`。卸载根证书：`fox-wx-channel.exe uninstall`。
+确认后台服务已启动，并点击“刷新”。如果保存目录发生过变化，新任务会写入新目录，旧文件不会自动移动。
 
-## 配置
+### 首次运行弹出管理员授权
 
-根目录 `config.yaml` 由 `internal/config/config.template.yaml` 生成。常用项：
+安装本机根证书和设置系统代理需要管理员权限，属于正常现象。
 
-```yaml
-download:
-  dir: "%UserDownloads%"          # 下载目录
-  filenameTemplate: "{{filename}}_{{spec}}"
-  maxRunning: 3
-proxy:
-  port: 2023
-  system: true
-api:
-  hostname: "127.0.0.1"
-  port: 2022
-update:
-  sources:
-    - enabled: false              # 已关闭自动更新，避免覆盖本改造版本
-```
+### 任务下载失败
 
-## 数据与安全
+检查视频是否仍可播放、网络是否正常，以及保存目录是否可写。必要时删除任务后重新下载。
 
-- 任务与内容元数据保存在工作目录 `data.db`（SQLite）。
-- 根 CA 私钥仅保存在本机 `certs/`，不要分享或上传；他人的根证书同样不要信任。
-- 本工具会修改系统代理设置与根证书库，退出时应恢复；异常退出后可手动检查系统代理。
-- 仅下载你有权保存的内容，遵守平台服务条款与著作权法规。
+### 关闭窗口后后台还在运行
 
-## 来源与许可证
+关闭主窗口会停止由它启动的后台服务。如果后台服务是由其他方式启动的，请从任务管理器结束 `fox-wx-channel-core.exe`。
 
-- 上游项目：<https://github.com/ltaoo/wx_channels_download>（v261123），许可证见 `LICENSE`（MIT + Commons Clause v1.0）。
-- **Commons Clause 禁止出售基于该软件功能的商业产品/服务**；本改造版本仅限个人非商业自用。
-- 依据 MIT 条款，保留上游版权声明与许可文本；本版本的修改清单与第三方来源见 `NOTICE.md`。
-- 上游声明其解密算法来自 `Hanson/WechatSphDecrypt`，前端解密参考 `kanadeblisst00/WechatVideoSniffer2.0`；这两个仓库未声明许可证，请勿将其作为商业分发依据。
+## 安全说明
+
+- 根证书私钥只保存在本机安装目录，请勿分享。
+- 程序只在本机运行本地服务，管理端口为 `127.0.0.1:2022`。
+- 建议从本仓库 Releases 下载安装包，不要使用来源不明的修改版。
+
+## 卸载
+
+从 Windows“设置 → 应用”中找到“微信视频号下载工具”，点击卸载。卸载不会删除已经下载的视频。
+
+## 链接
+
+- 我的博客：<https://foxnan.com>
+- AI 快讯：<https://hot.foxnan.com>
+- 发行版：<https://github.com/foxnangang/fox-wx-channel/releases>
+
+## 许可证
+
+许可证文件随程序安装在安装目录中，详见 `LICENSE`。
