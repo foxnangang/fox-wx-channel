@@ -3,6 +3,7 @@
 本机自用的微信视频号下载工具，基于 `ltaoo/wx_channels_download` v261123 改造。**仅限非商业、个人自用**。
 
 - GitHub：<https://github.com/foxnangang/fox-wx-channel>
+- 发行版下载：<https://github.com/foxnangang/fox-wx-channel/releases/tag/v0.1.0-fox>
 - 反馈：<https://github.com/foxnangang/fox-wx-channel/issues>
 
 ## 工作原理
