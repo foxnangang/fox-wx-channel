@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"golang.org/x/sys/windows"
 )
@@ -65,6 +66,7 @@ func notify_proxy_settings_changed() error {
 func run_reg_command(args ...string) error {
 	// Attempt 1: direct reg call (no elevation, no UAC prompt)
 	cmd := exec.Command("reg", args...)
+	hide_console_window(cmd)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		return nil
@@ -77,6 +79,7 @@ func run_reg_command(args ...string) error {
 	psCmd := "Start-Process -Verb RunAs -Wait -FilePath 'reg' -ArgumentList " + powershell_escape(arg_list)
 
 	psExec := exec.Command("powershell", "-NoProfile", "-Command", psCmd)
+	hide_console_window(psExec)
 	output2, err2 := psExec.CombinedOutput()
 	if err2 != nil {
 		return fmt.Errorf(
@@ -150,8 +153,13 @@ func ProxyTargetDescription(configured string) (service string, warning string) 
 	return "", ""
 }
 
+func hide_console_window(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+}
+
 func read_reg_value(path string, name string) (string, error) {
 	cmd := exec.Command("reg", "query", path, "/v", name)
+	hide_console_window(cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		outputText := string(output)
