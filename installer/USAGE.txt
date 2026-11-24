@@ -2,13 +2,16 @@ Fox-wx-channel 使用说明
 
 安装位置
   默认安装到：%LOCALAPPDATA%\Fox-wx-channel
-  开始菜单中提供：Fox-wx-channel、Edit Config（编辑配置）、Usage（本说明）。
+  开始菜单中提供：Fox-wx-channel（窗口界面）、Fox-wx-channel Console（控制台模式）、
+  Edit Config（编辑配置）、Usage（本说明）。
 
 首次运行
-  1. 以管理员身份运行开始菜单中的 Fox-wx-channel。
+  1. 以管理员身份运行开始菜单中的 Fox-wx-channel。控制台会在后台启动，随后打开一个
+     独立的 Edge 应用窗口显示管理界面；关闭该窗口会同时停止后台服务。
   2. 首次启动会生成并安装本机专属根证书，同时设置系统代理 127.0.0.1:2023。
-  3. 终端提示代理启动成功后，打开微信 PC 端视频号。
+  3. 界面显示服务已启动后，打开微信 PC 端视频号。
   4. 播放视频后暂停，点击页面上的下载按钮；无按钮时查看页面侧边或底部悬浮按钮。
+  5. 若窗口模式异常，可改用 Fox-wx-channel Console 查看控制台日志。
 
 修改保存目录
   1. 打开开始菜单中的 Edit Config（编辑 config.yaml）。

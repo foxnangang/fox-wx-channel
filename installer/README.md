@@ -8,10 +8,17 @@
 - 默认安装到 `%LOCALAPPDATA%\Fox-wx-channel`。
 - 复制可执行文件、配置、许可证与说明文件。
 - 在开始菜单创建 `Fox-wx-channel` 目录，包含：
-  - `Fox-wx-channel.lnk`：启动程序
+  - `Fox-wx-channel.lnk`：窗口模式，隐藏控制台并用 Edge 应用窗口打开本地管理界面
+  - `Fox-wx-channel Console.lnk`：控制台模式，便于查看日志排错
   - `Edit Config.lnk`：用记事本编辑 `config.yaml`
   - `Usage.lnk`：打开 `USAGE.txt`
 - 不创建开机自启。
+
+## 窗口模式
+
+`Fox-wx-channel-GUI.ps1` 启动后台服务后，等待本地 API 端口 2022 就绪，再以
+`msedge.exe --app=http://127.0.0.1:2022` 打开独立应用窗口；关闭窗口会停止由它启动的后台服务。
+依赖系统已安装 Microsoft Edge。窗口模式不是原生编译 GUI，而是把现有 Web 管理界面以应用窗口呈现。
 
 ## 配置文件
 

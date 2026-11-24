@@ -9,6 +9,7 @@ copy /Y "%~dp0LICENSE" "%APPDIR%\" >nul
 copy /Y "%~dp0NOTICE.md" "%APPDIR%\" >nul
 copy /Y "%~dp0README.md" "%APPDIR%\" >nul
 copy /Y "%~dp0USAGE.txt" "%APPDIR%\" >nul
+copy /Y "%~dp0Fox-wx-channel-GUI.ps1" "%APPDIR%\" >nul
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0shortcuts.ps1" -AppDir "%APPDIR%"
 echo Installed to: %APPDIR%
 endlocal
