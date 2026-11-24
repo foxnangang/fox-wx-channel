@@ -33,3 +33,14 @@ $usageLink.TargetPath = "$env:WINDIR\System32\notepad.exe"
 $usageLink.Arguments = '"' + (Join-Path $AppDir 'USAGE.txt') + '"'
 $usageLink.Description = 'Fox-wx-channel usage'
 $usageLink.Save()
+
+$desktopDir = [Environment]::GetFolderPath('Desktop')
+if ($desktopDir) {
+    $desktopLink = $WshShell.CreateShortcut((Join-Path $desktopDir 'Fox-wx-channel.lnk'))
+    $desktopLink.TargetPath = $psExe
+    $desktopLink.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $guiScript + '" -AppDir "' + $AppDir + '"'
+    $desktopLink.WorkingDirectory = $AppDir
+    $desktopLink.IconLocation = "$exePath,0"
+    $desktopLink.Description = 'Fox-wx-channel desktop UI'
+    $desktopLink.Save()
+}
