@@ -61,3 +61,6 @@ deploy.sh
 # dotnet build output
 desktop/bin/
 desktop/obj/
+installer-app/bin/
+installer-app/obj/
+installer-app/payload.zip

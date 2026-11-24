@@ -4,7 +4,7 @@
 
 - GitHub：<https://github.com/foxnangang/fox-wx-channel>
 - 发行版下载：<https://github.com/foxnangang/fox-wx-channel/releases/tag/v0.1.0-fox>
-- 安装包：`Fox-wx-channel-Setup.exe`（管理员运行，默认装到 `%LOCALAPPDATA%\Fox-wx-channel`）
+- 安装包：`Fox-wx-channel-Setup.exe` 标准安装向导，单文件，管理员运行，默认装到 `%LOCALAPPDATA%\Fox-wx-channel`
 - 原生界面：`Fox-wx-channel.exe` 是 WinForms 桌面程序，左侧导航（下载任务 / 设置 / 关于），顶部刷新与打开目录，任务表格显示状态、进度、大小；设置页可直接修改保存目录与代理端口
 - 反馈：<https://github.com/foxnangang/fox-wx-channel/issues>
 
