@@ -57,3 +57,7 @@ deploy.sh
 # Fox-wx-channel deliverables
 !fox-wx-channel.exe
 !config.yaml
+
+# dotnet build output
+desktop/bin/
+desktop/obj/

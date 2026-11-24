@@ -5,7 +5,7 @@
 - GitHub：<https://github.com/foxnangang/fox-wx-channel>
 - 发行版下载：<https://github.com/foxnangang/fox-wx-channel/releases/tag/v0.1.0-fox>
 - 安装包：`Fox-wx-channel-Setup.exe`（管理员运行，默认装到 `%LOCALAPPDATA%\Fox-wx-channel`）
-- 窗口模式：开始菜单 `Fox-wx-channel` 以 Edge 应用窗口打开本地管理界面；`Fox-wx-channel Console` 为控制台模式
+- 窗口模式：`Fox-wx-channel.exe` 是原生 WinForms 桌面程序，双击直接打开窗口；内置设置可直接修改保存目录与代理端口
 - 反馈：<https://github.com/foxnangang/fox-wx-channel/issues>
 
 ## 工作原理
