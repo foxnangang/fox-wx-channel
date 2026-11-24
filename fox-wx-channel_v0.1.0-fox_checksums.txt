@@ -1,2 +1,2 @@
 ed9c31be85ec23c6a48b60c3269fe7bcfefb8d923a77199323c0e30aec30c9de *fox-wx-channel_v0.1.0-fox_windows_x86_64.zip
-087829674ddbfa57d1ac86f76848360a3cab31f7d2acf201e5d833dcfb86324d *Fox-wx-channel-Setup.exe
+24edc0f93fa3a6329d89c77105aff82102c818bb0d5fb5a8933942757b566dca *Fox-wx-channel-Setup.exe
