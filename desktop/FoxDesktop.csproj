@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Fox-wx-channel</AssemblyName>
     <RootNamespace>FoxDesktop</RootNamespace>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <PublishSingleFile>false</PublishSingleFile>
     <SelfContained>false</SelfContained>
   </PropertyGroup>

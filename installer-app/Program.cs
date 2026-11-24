@@ -55,6 +55,7 @@ internal sealed class SetupForm : Form
     public SetupForm()
     {
         Text = "Fox-wx-channel 安装程序";
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Size = new Size(720, 520);
         MinimumSize = new Size(720, 520);
         MaximumSize = new Size(720, 520);
@@ -150,6 +151,19 @@ internal sealed class SetupForm : Form
         _pageFinish.Controls.Add(openDir);
     }
 
+    private static string NormalizeTarget(string path)
+    {
+        var full = Path.GetFullPath(path.Trim());
+        var name = Path.GetFileName(full.TrimEnd(Path.DirectorySeparatorChar));
+        if (string.IsNullOrEmpty(name) ||
+            name.Equals("Program Files", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("Program Files (x86)", StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(full, "Fox-wx-channel");
+        }
+        return full;
+    }
+
     private void Browse_Click(object? sender, EventArgs e)
     {
         using var dialog = new FolderBrowserDialog { Description = "选择安装目录", SelectedPath = _target.Text };
@@ -165,6 +179,7 @@ internal sealed class SetupForm : Form
                 MessageBox.Show("请选择安装目录。", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            _target.Text = NormalizeTarget(_target.Text);
             _step = 1;
             _pageWelcome.Visible = false;
             _pageFinish.Visible = false;

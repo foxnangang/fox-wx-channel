@@ -5,7 +5,7 @@
 ## 安装流程
 
 1. 以管理员身份启动安装向导。
-2. 选择安装目录，默认 `%LOCALAPPDATA%\Fox-wx-channel`。
+2. 选择安装目录，默认 `%LOCALAPPDATA%\Fox-wx-channel`。如果选择 `Program Files` 或盘符根目录，会自动创建 `Fox-wx-channel` 子文件夹，不会把文件散落在一级目录。
 3. 点击“安装”，显示复制进度。
 4. 完成后可直接运行程序或打开安装目录。
 

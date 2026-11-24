@@ -7,6 +7,7 @@
     <AssemblyName>Fox-wx-channel-Setup</AssemblyName>
     <RootNamespace>FoxInstaller</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="payload.zip" LogicalName="payload.zip" />
