@@ -1,0 +1,33 @@
+Fox-wx-channel 使用说明
+
+安装位置
+  默认安装到：%LOCALAPPDATA%\Fox-wx-channel
+  开始菜单中提供：Fox-wx-channel、Edit Config（编辑配置）、Usage（本说明）。
+
+首次运行
+  1. 以管理员身份运行开始菜单中的 Fox-wx-channel。
+  2. 首次启动会生成并安装本机专属根证书，同时设置系统代理 127.0.0.1:2023。
+  3. 终端提示代理启动成功后，打开微信 PC 端视频号。
+  4. 播放视频后暂停，点击页面上的下载按钮；无按钮时查看页面侧边或底部悬浮按钮。
+
+修改保存目录
+  1. 打开开始菜单中的 Edit Config（编辑 config.yaml）。
+  2. 修改 download.dir，例如：
+       dir: "D:\\素材\\视频下载"
+     也可保留默认值 "%UserDownloads%"（系统下载文件夹）。
+  3. 保存文件后重启 Fox-wx-channel。
+  4. 完整字段说明见安装目录中的 config.example.yaml。
+
+常用命令
+  停止代理：fox-wx-channel.exe server stop
+  卸载根证书：fox-wx-channel.exe uninstall
+
+微信 4.2.x 注意事项
+  若视频号页面没有下载按钮，需完全退出微信，编辑：
+    %APPDATA%\Tencent\xwechat\radium\users\<你的账号ID>\xworker\liteapp\local\packages\ilinkres_uzhblidb\engineConfig\<版本>\dist\engineConfig.json
+  将 featureSwitch.handleFinder 改为 false，保存后重启微信。
+  修改前请备份该文件。
+
+安全与许可
+  根证书私钥仅保存在本机，请勿分享。
+  仅限非商业个人自用；来源与许可证见 LICENSE 和 NOTICE.md。

@@ -1,0 +1,14 @@
+@echo off
+setlocal
+if defined FOX_INSTALL_DIR (set "APPDIR=%FOX_INSTALL_DIR%") else (set "APPDIR=%LOCALAPPDATA%\Fox-wx-channel")
+if not exist "%APPDIR%" mkdir "%APPDIR%"
+copy /Y "%~dp0fox-wx-channel.exe" "%APPDIR%\" >nul
+copy /Y "%~dp0config.yaml" "%APPDIR%\" >nul
+copy /Y "%~dp0config.example.yaml" "%APPDIR%\" >nul
+copy /Y "%~dp0LICENSE" "%APPDIR%\" >nul
+copy /Y "%~dp0NOTICE.md" "%APPDIR%\" >nul
+copy /Y "%~dp0README.md" "%APPDIR%\" >nul
+copy /Y "%~dp0USAGE.txt" "%APPDIR%\" >nul
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0shortcuts.ps1" -AppDir "%APPDIR%"
+echo Installed to: %APPDIR%
+endlocal
