@@ -40,7 +40,7 @@ internal sealed class MainForm : Form
     private readonly Label _pageSubtitle = new() { AutoSize = true, Font = new Font("Microsoft YaHei UI", 8.5F), ForeColor = Muted };
     private readonly DataGridView _grid = new();
     private readonly Label _empty = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Text = "还没有任务\r\n播放视频号视频后，点击页面上的下载按钮", ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 10F), Visible = false };
-    private readonly Label _count = new() { AutoSize = true, ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 9F) };
+    private readonly Label _count = new() { Dock = DockStyle.Right, Width = 180, TextAlign = ContentAlignment.MiddleRight, Padding = new Padding(0, 0, 8, 0), ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 9F) };
     private readonly TextBox _search = new() { Width = 260, Font = new Font("Microsoft YaHei UI", 9.5F) };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 3000 };
     private readonly Panel _pageTasks = new() { Dock = DockStyle.Fill, Visible = false };
@@ -201,9 +201,7 @@ internal sealed class MainForm : Form
         startAll.Click += async (_, _) => await PostAsync("/api/v1/download_task/start_all", "{}");
         pauseAll.Click += async (_, _) => await PostAsync("/api/v1/download_task/pause_all", "{}");
         delete.Click += async (_, _) => await DeleteSelectedAsync();
-        _count.Location = new Point(700, 17);
         searchBar.Controls.AddRange(new Control[] { _search, startAll, pauseAll, delete, _count });
-        searchBar.Resize += (_, _) => _count.Left = searchBar.Width - _count.Width;
 
         _grid.Dock = DockStyle.Fill;
         _grid.BackgroundColor = Color.White;
