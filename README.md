@@ -93,9 +93,11 @@
 
 ## 链接
 
+- 作者：安卿辰
 - 我的博客：<https://foxnan.com>
 - AI 快讯：<https://hot.foxnan.com>
 - 发行版：<https://github.com/foxnangang/fox-wx-channel/releases>
+- 赞赏码：程序“关于”页内查看
 
 ## 许可证
 
