@@ -40,14 +40,14 @@ $profileDir = Join-Path $AppDir 'edge-profile'
 $url = "http://127.0.0.1:$apiPort"
 
 if ($edgePath) {
-    $args = @(
+    $edgeArgs = @(
         "--app=$url",
         "--window-size=1200,800",
         "--user-data-dir=$profileDir",
         "--no-first-run",
         "--disable-features=TranslateUI"
     )
-    $edgeProcess = Start-Process -FilePath $edgePath -ArgumentList $args -PassThru
+    $edgeProcess = Start-Process -FilePath $edgePath -ArgumentList $edgeArgs -PassThru
     $edgeProcess.WaitForExit()
 } else {
     Start-Process $url
